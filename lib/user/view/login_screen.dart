@@ -21,6 +21,7 @@ class LoginScreen extends StatefulWidget {
 class _LoginScreenState extends State<LoginScreen> {
   String username = '';
   String password = '';
+  final _formKey = GlobalKey<FormState>();
 
   @override
   Widget build(BuildContext context) {
@@ -41,70 +42,118 @@ class _LoginScreenState extends State<LoginScreen> {
                 const _Title(),
                 const Gap(16),
                 const _SubTitle(),
-                CustomTextFormField(
-                  hintText: '이메일을 입력해주세요',
-                  onChanged: (String value) {
-                    username = value;
-                  },
-                ),
-                const Gap(16),
-                CustomTextFormField(
-                  hintText: '비밀번호를 입력해주세요',
-                  obscureText: true,
-                  onChanged: (String value) {
-                    password = value;
-                  },
-                ),
-                const Gap(16),
-                ElevatedButton(
-                  onPressed: () async {
-                    // ID:비밀번호
-                    final rawString = '$username:$password';
-
-                    Codec<String, String> stringToBase64 = utf8.fuse(base64);
-
-                    String token = stringToBase64.encode(rawString);
-
-                    final response = await dio.post(
-                      'http://$ip/auth/login',
-                      options: Options(
-                        headers: {
-                          'authorization': 'Basic $token',
+                Form(
+                  key: _formKey,
+                  child: Column(
+                    children: [
+                      CustomTextFormField(
+                        validator: (value) {
+                          if (value == null ||
+                              value.isEmpty ||
+                              !value.contains('@')) {
+                            return '이메일을 입력해주세요';
+                          }
+                          return null;
+                        },
+                        hintText: '이메일을 입력해주세요',
+                        onChanged: (String value) {
+                          username = value;
                         },
                       ),
-                    );
-                    final refreshToken = response.data['refreshToken'];
-                    final accessToken = response.data['accessToken'];
-                    await storage.write(
-                      key: REFRESH_TOKEN_KEY,
-                      value: refreshToken,
-                    );
-                    await storage.write(
-                      key: ACCESS_TOKEN_KEY,
-                      value: accessToken,
-                    );
-
-                    Navigator.of(context).push(
-                      MaterialPageRoute(
-                        builder: (_) => const RootTab(),
+                      const Gap(16),
+                      CustomTextFormField(
+                        validator: (value) {
+                          if (value == null ||
+                              value.isEmpty ||
+                              value.length < 6) {
+                            return '7자 이상의 비밀번호를 입력해주세요';
+                          }
+                          return null;
+                        },
+                        hintText: '비밀번호를 입력해주세요',
+                        obscureText: true,
+                        onChanged: (String value) {
+                          password = value;
+                        },
                       ),
-                    );
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: PRIMARY_COLOR,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(10),
-                    ),
-                  ),
-                  child: const Text(
-                    '로그인',
+                      const Gap(16),
+                      ElevatedButton(
+                        onPressed: () async {
+                          if (_formKey.currentState!.validate()) {
+                            ScaffoldMessenger.of(context).showSnackBar(
+                              const SnackBar(
+                                content: Text('로그인 중입니다...'),
+                              ),
+                            );
+                          }
+                          // ID:비밀번호
+                          final rawString = '$username:$password';
+
+                          Codec<String, String> stringToBase64 =
+                              utf8.fuse(base64);
+
+                          String token = stringToBase64.encode(rawString);
+
+                          try {
+                            final response = await dio.post(
+                              'http://$ip/auth/login',
+                              options: Options(
+                                headers: {
+                                  'authorization': 'Basic $token',
+                                },
+                              ),
+                            );
+                            print(response.data);
+                            final refreshToken = response.data['refreshToken'];
+                            final accessToken = response.data['accessToken'];
+                            await storage.write(
+                              key: REFRESH_TOKEN_KEY,
+                              value: refreshToken,
+                            );
+                            await storage.write(
+                              key: ACCESS_TOKEN_KEY,
+                              value: accessToken,
+                            );
+                            Navigator.of(context).push(
+                              MaterialPageRoute(
+                                builder: (_) => const RootTab(),
+                              ),
+                            );
+                          } catch (e) {
+                            return;
+                          }
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: PRIMARY_COLOR,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          '로그인',
+                        ),
+                      ),
+                    ],
                   ),
                 ),
                 TextButton(
                   style: TextButton.styleFrom(
                     foregroundColor: Colors.black,
                   ),
-                  onPressed: () async {},
+                  onPressed: () async {
+                    final refreshToken = await storage.read(
+                      key: REFRESH_TOKEN_KEY,
+                    );
+                    final response = await dio.post(
+                      'http://$ip/auth/token',
+                      options: Options(
+                        headers: {
+                          'authorization': 'Bearer $refreshToken',
+                        },
+                      ),
+                    );
+                    print(response.data);
+                  },
                   child: const Text(
                     "회원가입",
                   ),

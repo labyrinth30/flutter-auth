@@ -20,6 +20,7 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   void initState() {
     super.initState();
+    deleteToken();
     checkToken();
   }
 
@@ -29,7 +30,6 @@ class _SplashScreenState extends State<SplashScreen> {
 
   void checkToken() async {
     final refreshToken = await storage.read(key: REFRESH_TOKEN_KEY);
-    final accessToken = await storage.read(key: ACCESS_TOKEN_KEY);
     final dio = Dio();
 
     try {
@@ -61,9 +61,6 @@ class _SplashScreenState extends State<SplashScreen> {
         (route) => false,
       );
     }
-
-    if (refreshToken == null || accessToken == null) {
-    } else {}
   }
 
   @override

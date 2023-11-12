@@ -7,6 +7,7 @@ class CustomTextFormField extends StatelessWidget {
   final bool obscureText;
   final bool autoFocus;
   final Function(String)? onChanged;
+  final String? Function(String?)? validator;
 
   const CustomTextFormField({
     super.key,
@@ -15,6 +16,7 @@ class CustomTextFormField extends StatelessWidget {
     this.obscureText = false,
     this.autoFocus = false,
     required this.onChanged,
+    this.validator,
   });
 
   @override
@@ -36,6 +38,7 @@ class CustomTextFormField extends StatelessWidget {
 
       // 값이 바뀔 때마다 실행되는 콜백
       onChanged: onChanged,
+      validator: validator,
       decoration: InputDecoration(
         contentPadding: const EdgeInsets.all(20),
         errorText: errorText,
